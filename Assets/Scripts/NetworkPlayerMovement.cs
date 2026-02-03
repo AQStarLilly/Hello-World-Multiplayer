@@ -13,7 +13,7 @@ public class NetworkPlayerMovement : NetworkBehaviour
     {
         if (!IsOwner) return;
         float x = 0f;
-        float z = 0f;
+        float z = 0f;    
 
         if (Input.GetKey(KeyCode.LeftArrow)) x -= 1f;
         if (Input.GetKey(KeyCode.RightArrow)) x += 1f;
