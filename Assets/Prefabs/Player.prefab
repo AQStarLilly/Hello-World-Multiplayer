@@ -226,3 +226,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4e277bcfdb9a4e4897662960ee626aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  moveSpeed: 10
+  sendRate: 0.033333335
