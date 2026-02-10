@@ -12,6 +12,7 @@ namespace HelloWorld
         Button clientButton;
         Button serverButton;
         Button moveButton;
+        Button startGameButton;
         Label statusLabel;
 
         void OnEnable()
@@ -23,6 +24,7 @@ namespace HelloWorld
             clientButton = CreateButton("ClientButton", "Client");
             serverButton = CreateButton("ServerButton", "Server");
             moveButton = CreateButton("MoveButton", "Move");
+            startGameButton = CreateButton("StartGameButton", "Start Game");
             statusLabel = CreateLabel("StatusLabel", "Not Connected");
 
             rootVisualElement.Clear();
@@ -30,12 +32,14 @@ namespace HelloWorld
             rootVisualElement.Add(clientButton);
             rootVisualElement.Add(serverButton);
             rootVisualElement.Add(moveButton);
+            rootVisualElement.Add(startGameButton);
             rootVisualElement.Add(statusLabel);
 
             hostButton.clicked += OnHostButtonClicked;
             clientButton.clicked += OnClientButtonClicked;
             serverButton.clicked += OnServerButtonClicked;
             moveButton.clicked += SubmitNewPosition;
+            startGameButton.clicked += OnStartGameClicked;
         }
 
         void Update()
@@ -49,6 +53,7 @@ namespace HelloWorld
             clientButton.clicked -= OnClientButtonClicked;
             serverButton.clicked -= OnServerButtonClicked;
             moveButton.clicked -= SubmitNewPosition;
+            startGameButton.clicked -= OnStartGameClicked;
         }
 
         void OnHostButtonClicked() => NetworkManager.Singleton.StartHost();
@@ -87,6 +92,7 @@ namespace HelloWorld
             {
                 SetStartButtons(false);
                 SetMoveButton(false);
+                startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("NetworkManager not found");
                 return;
             }
@@ -95,6 +101,7 @@ namespace HelloWorld
             {
                 SetStartButtons(true);
                 SetMoveButton(false);
+                startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("Not connected");
             }
             else
@@ -102,8 +109,32 @@ namespace HelloWorld
                 SetStartButtons(false);
                 SetMoveButton(true);
                 UpdateStatusLabels();
+                UpdateStartGameButton(); 
+            }
+
+        }
+
+        void UpdateStartGameButton()
+        {
+            if (NetworkManager.Singleton.IsHost)
+            {
+                bool enoughPlayers = NetworkManager.Singleton.ConnectedClientsIds.Count >= 2;
+                startGameButton.style.display = enoughPlayers ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            else
+            {
+                startGameButton.style.display = DisplayStyle.None;
             }
         }
+
+        void OnStartGameClicked()
+        {
+            if (NetworkManager.Singleton.IsHost)
+            {
+                TagGameManager.Instance.StartGameServerRpc();
+            }
+        }
+
 
         void SetStartButtons(bool state)
         {

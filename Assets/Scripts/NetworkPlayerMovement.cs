@@ -4,14 +4,26 @@ using UnityEngine;
 public class NetworkPlayerMovement : NetworkBehaviour
 {
     [Header("Movement")]
-    [SerializeField] private float moveSpeed = 4.5f;
+    [SerializeField] private float moveSpeed = 8f;
 
     [SerializeField] private float sendRate = 1f / 30f;
     private float _sendTimer;
 
+    private Rigidbody rb;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
+
     private void Update()
     {
         if (!IsOwner) return;
+
+        var tagPlayer = GetComponent<TagPlayer>();
+        if (tagPlayer.IsFrozen.Value)
+            return;
+
         float x = 0f;
         float z = 0f;    
 
@@ -32,9 +44,11 @@ public class NetworkPlayerMovement : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void SubmitMoveInputServerRpc(Vector2 input, ServerRpcParams rpcParams = default)
+    private void SubmitMoveInputServerRpc(Vector2 input)
     {
         Vector3 dir = new Vector3(input.x, 0f, input.y);
-        transform.position += dir * moveSpeed * sendRate;
+
+        Vector3 targetPos = rb.position + dir * moveSpeed * sendRate;
+        rb.MovePosition(targetPos);
     }
 }
