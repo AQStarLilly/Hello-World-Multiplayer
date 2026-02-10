@@ -11,34 +11,53 @@ namespace HelloWorld
         Button hostButton;
         Button clientButton;
         Button serverButton;
-        //Button moveButton;
         Button startGameButton;
+
         Label statusLabel;
         Label sprintHintLabel;
         Label titleLabel;
 
+        // Relay UI
+        TextField joinCodeField;
+        Button joinWithCodeButton;
+        Label joinCodeLabel;
+
+        RelayConnector relay; // <-- add RelayConnector script somewhere in the scene
+
         void OnEnable()
         {
+            relay = FindFirstObjectByType<RelayConnector>();
+
             var uiDocument = GetComponent<UIDocument>();
             rootVisualElement = uiDocument.rootVisualElement;
 
-            hostButton = CreateButton("HostButton", "Host");
-            clientButton = CreateButton("ClientButton", "Client");
-            serverButton = CreateButton("ServerButton", "Server");
-            //moveButton = CreateButton("MoveButton", "Move");
+            hostButton = CreateButton("HostButton", "Host (Relay)");
+            clientButton = CreateButton("ClientButton", "Client (No Relay)");
+            serverButton = CreateButton("ServerButton", "Server (No Relay)");
             startGameButton = CreateButton("StartGameButton", "Start Game");
+
             statusLabel = CreateLabel("StatusLabel", "Not Connected");
-            titleLabel = CreateLabel("TitleLabel", "TAG");
+            //titleLabel = CreateLabel("TitleLabel", "TAG");
             sprintHintLabel = CreateLabel("SprintHintLabel", "Hold SPACE to sprint briefly");
 
+            // Relay join-code UI
+            joinCodeField = new TextField("Join Code");
+            joinCodeField.name = "JoinCodeField";
+            joinCodeField.style.width = 240;
+
+            joinWithCodeButton = CreateButton("JoinWithCodeButton", "Join With Code (Relay)");
+
+            joinCodeLabel = CreateLabel("JoinCodeLabel", "Join Code: (none)");
+            joinCodeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
             // TAG title (top center)
-            titleLabel.style.position = Position.Absolute;
-            titleLabel.style.top = 8;
-            titleLabel.style.left = 0;
-            titleLabel.style.right = 0;
-            titleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            titleLabel.style.fontSize = 36;
-            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            //titleLabel.style.position = Position.Absolute;
+            //titleLabel.style.top = 8;
+            //titleLabel.style.left = 0;
+            //titleLabel.style.right = 0;
+            //titleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            //titleLabel.style.fontSize = 36;
+            //titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
 
             // Sprint hint (top right)
             sprintHintLabel.style.position = Position.Absolute;
@@ -48,19 +67,31 @@ namespace HelloWorld
             sprintHintLabel.style.color = new Color(0.25f, 0.25f, 0.25f);
 
             rootVisualElement.Clear();
+
+            // Connection buttons
             rootVisualElement.Add(hostButton);
+
+            // Relay join controls
+            rootVisualElement.Add(joinCodeField);
+            rootVisualElement.Add(joinWithCodeButton);
+            rootVisualElement.Add(joinCodeLabel);
+
+            // Optional legacy buttons (direct LAN / direct IP etc.)
             rootVisualElement.Add(clientButton);
             rootVisualElement.Add(serverButton);
-            //rootVisualElement.Add(moveButton);
+
+            // In-game
             rootVisualElement.Add(startGameButton);
             rootVisualElement.Add(statusLabel);
-            rootVisualElement.Add(titleLabel);
+
+            // Overlays
+            //rootVisualElement.Add(titleLabel);
             rootVisualElement.Add(sprintHintLabel);
 
             hostButton.clicked += OnHostButtonClicked;
+            joinWithCodeButton.clicked += OnJoinWithCodeClicked;
             clientButton.clicked += OnClientButtonClicked;
             serverButton.clicked += OnServerButtonClicked;
-            //moveButton.clicked += SubmitNewPosition;
             startGameButton.clicked += OnStartGameClicked;
         }
 
@@ -72,20 +103,65 @@ namespace HelloWorld
         void OnDisable()
         {
             hostButton.clicked -= OnHostButtonClicked;
+            joinWithCodeButton.clicked -= OnJoinWithCodeClicked;
             clientButton.clicked -= OnClientButtonClicked;
             serverButton.clicked -= OnServerButtonClicked;
-            //moveButton.clicked -= SubmitNewPosition;
             startGameButton.clicked -= OnStartGameClicked;
         }
 
-        void OnHostButtonClicked() => NetworkManager.Singleton.StartHost();
+        async void OnHostButtonClicked()
+        {
+            if (relay == null)
+            {
+                Debug.LogError("RelayConnector not found in scene. Add RelayConnector to a GameObject.");
+                return;
+            }
 
+            try
+            {
+                SetStatusText("Starting Host (Relay)...");
+                string code = await relay.StartHostWithRelay();
+                joinCodeLabel.text = $"Join Code: {code}";
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                joinCodeLabel.text = "Join Code: (failed)";
+                SetStatusText("Failed to start Host (Relay)");
+            }
+        }
+
+        async void OnJoinWithCodeClicked()
+        {
+            if (relay == null)
+            {
+                Debug.LogError("RelayConnector not found in scene. Add RelayConnector to a GameObject.");
+                return;
+            }
+
+            string code = joinCodeField.value?.Trim();
+            if (string.IsNullOrEmpty(code))
+            {
+                Debug.LogWarning("Enter a join code first.");
+                return;
+            }
+
+            try
+            {
+                SetStatusText("Joining (Relay)...");
+                await relay.StartClientWithRelay(code);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                SetStatusText("Failed to join (Relay)");
+            }
+        }
+
+        // Optional: keep your original direct-start buttons for local testing / future IP transport work
         void OnClientButtonClicked() => NetworkManager.Singleton.StartClient();
-
         void OnServerButtonClicked() => NetworkManager.Singleton.StartServer();
 
-        // Disclaimer: This is not the recommended way to create and stylize the UI elements, it is only utilized for the sake of simplicity.
-        // The recommended way is to use UXML and USS. Please see this link for more information: https://docs.unity3d.com/Manual/UIE-USS.html
         private Button CreateButton(string name, string text)
         {
             var button = new Button();
@@ -113,27 +189,38 @@ namespace HelloWorld
             if (NetworkManager.Singleton == null)
             {
                 SetStartButtons(false);
-                //SetMoveButton(false);
                 startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("NetworkManager not found");
                 return;
             }
 
-            if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+            bool connected = NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer;
+
+            if (!connected)
             {
                 SetStartButtons(true);
-                //SetMoveButton(false);
+
+                // show relay join UI when not connected
+                joinCodeField.style.display = DisplayStyle.Flex;
+                joinWithCodeButton.style.display = DisplayStyle.Flex;
+                joinCodeLabel.style.display = DisplayStyle.Flex;
+
                 startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("Not connected");
             }
             else
             {
                 SetStartButtons(false);
-                //SetMoveButton(true);
-                UpdateStatusLabels();
-                UpdateStartGameButton(); 
-            }
 
+                // hide connection UI when connected
+                joinCodeField.style.display = DisplayStyle.None;
+                joinWithCodeButton.style.display = DisplayStyle.None;
+                // keep join code label visible for host so they can read it out; hide for clients
+                joinCodeLabel.style.display = NetworkManager.Singleton.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
+
+                UpdateStatusLabels();
+                UpdateStartGameButton();
+            }
         }
 
         void UpdateStartGameButton()
@@ -157,50 +244,27 @@ namespace HelloWorld
             }
         }
 
-
         void SetStartButtons(bool state)
         {
             hostButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // These are optional "non-relay" buttons you had before; keep or remove.
             clientButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
             serverButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
         }
-
-        //void SetMoveButton(bool state)
-        //{
-        //    moveButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
-        //    if (state)
-        //    {
-        //        moveButton.text = NetworkManager.Singleton.IsServer ? "Move" : "Request Position Change";
-        //    }
-        //}
 
         void SetStatusText(string text) => statusLabel.text = text;
 
         void UpdateStatusLabels()
         {
-            var mode = NetworkManager.Singleton.IsHost ? "Host" : NetworkManager.Singleton.IsServer ? "Server" : "Client";
+            var mode = NetworkManager.Singleton.IsHost ? "Host"
+                : NetworkManager.Singleton.IsServer ? "Server"
+                : "Client";
+
             string transport = "Transport: " + NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetType().Name;
             string modeText = "Mode: " + mode;
-            SetStatusText($"{transport}\n{modeText}");
-        }
 
-        void SubmitNewPosition()
-        {
-            if (NetworkManager.Singleton.IsServer && !NetworkManager.Singleton.IsClient)
-            {
-                foreach (ulong uid in NetworkManager.Singleton.ConnectedClientsIds)
-                {
-                    var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(uid);
-                    var player = playerObject.GetComponent<HelloWorldPlayer>();
-                    player.Move();
-                }
-            }
-            else if (NetworkManager.Singleton.IsClient)
-            {
-                var playerObject = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
-                var player = playerObject.GetComponent<HelloWorldPlayer>();
-                player.Move();
-            }
+            SetStatusText($"{transport}\n{modeText}");
         }
     }
 }
