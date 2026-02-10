@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 105332309224620966}
   - component: {fileID: 2656037657254670063}
   - component: {fileID: 624539146529884624}
+  - component: {fileID: 4578653667920589333}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -275,3 +276,18 @@ MonoBehaviour:
     m_InternalValue: 0
   IsFrozen:
     m_InternalValue: 0
+--- !u!114 &4578653667920589333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1560331431884953368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cf8bbe8074c1a844bcbf5df23a0b825, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetRenderer: {fileID: 1928524234833290635}
+  taggerColor: {r: 1, g: 0, b: 0, a: 1}
+  normalColor: {r: 1, g: 1, b: 1, a: 1}

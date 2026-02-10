@@ -11,9 +11,11 @@ namespace HelloWorld
         Button hostButton;
         Button clientButton;
         Button serverButton;
-        Button moveButton;
+        //Button moveButton;
         Button startGameButton;
         Label statusLabel;
+        Label sprintHintLabel;
+        Label titleLabel;
 
         void OnEnable()
         {
@@ -23,22 +25,42 @@ namespace HelloWorld
             hostButton = CreateButton("HostButton", "Host");
             clientButton = CreateButton("ClientButton", "Client");
             serverButton = CreateButton("ServerButton", "Server");
-            moveButton = CreateButton("MoveButton", "Move");
+            //moveButton = CreateButton("MoveButton", "Move");
             startGameButton = CreateButton("StartGameButton", "Start Game");
             statusLabel = CreateLabel("StatusLabel", "Not Connected");
+            titleLabel = CreateLabel("TitleLabel", "TAG");
+            sprintHintLabel = CreateLabel("SprintHintLabel", "Hold SPACE to sprint briefly");
+
+            // TAG title (top center)
+            titleLabel.style.position = Position.Absolute;
+            titleLabel.style.top = 8;
+            titleLabel.style.left = 0;
+            titleLabel.style.right = 0;
+            titleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            titleLabel.style.fontSize = 36;
+            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            // Sprint hint (top right)
+            sprintHintLabel.style.position = Position.Absolute;
+            sprintHintLabel.style.top = 12;
+            sprintHintLabel.style.right = 12;
+            sprintHintLabel.style.fontSize = 14;
+            sprintHintLabel.style.color = new Color(0.25f, 0.25f, 0.25f);
 
             rootVisualElement.Clear();
             rootVisualElement.Add(hostButton);
             rootVisualElement.Add(clientButton);
             rootVisualElement.Add(serverButton);
-            rootVisualElement.Add(moveButton);
+            //rootVisualElement.Add(moveButton);
             rootVisualElement.Add(startGameButton);
             rootVisualElement.Add(statusLabel);
+            rootVisualElement.Add(titleLabel);
+            rootVisualElement.Add(sprintHintLabel);
 
             hostButton.clicked += OnHostButtonClicked;
             clientButton.clicked += OnClientButtonClicked;
             serverButton.clicked += OnServerButtonClicked;
-            moveButton.clicked += SubmitNewPosition;
+            //moveButton.clicked += SubmitNewPosition;
             startGameButton.clicked += OnStartGameClicked;
         }
 
@@ -52,7 +74,7 @@ namespace HelloWorld
             hostButton.clicked -= OnHostButtonClicked;
             clientButton.clicked -= OnClientButtonClicked;
             serverButton.clicked -= OnServerButtonClicked;
-            moveButton.clicked -= SubmitNewPosition;
+            //moveButton.clicked -= SubmitNewPosition;
             startGameButton.clicked -= OnStartGameClicked;
         }
 
@@ -91,7 +113,7 @@ namespace HelloWorld
             if (NetworkManager.Singleton == null)
             {
                 SetStartButtons(false);
-                SetMoveButton(false);
+                //SetMoveButton(false);
                 startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("NetworkManager not found");
                 return;
@@ -100,14 +122,14 @@ namespace HelloWorld
             if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
             {
                 SetStartButtons(true);
-                SetMoveButton(false);
+                //SetMoveButton(false);
                 startGameButton.style.display = DisplayStyle.None;
                 SetStatusText("Not connected");
             }
             else
             {
                 SetStartButtons(false);
-                SetMoveButton(true);
+                //SetMoveButton(true);
                 UpdateStatusLabels();
                 UpdateStartGameButton(); 
             }
@@ -143,14 +165,14 @@ namespace HelloWorld
             serverButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        void SetMoveButton(bool state)
-        {
-            moveButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
-            if (state)
-            {
-                moveButton.text = NetworkManager.Singleton.IsServer ? "Move" : "Request Position Change";
-            }
-        }
+        //void SetMoveButton(bool state)
+        //{
+        //    moveButton.style.display = state ? DisplayStyle.Flex : DisplayStyle.None;
+        //    if (state)
+        //    {
+        //        moveButton.text = NetworkManager.Singleton.IsServer ? "Move" : "Request Position Change";
+        //    }
+        //}
 
         void SetStatusText(string text) => statusLabel.text = text;
 
